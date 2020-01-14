@@ -1,9 +1,7 @@
-import { getLogger } from 'modules/logging';
-
-const log = getLogger('app');
+import { parseAllDirectories } from 'modules/parser';
 
 const execute = async () => {
-  log.info('Starting up...');
+  await parseAllDirectories();
 };
 
 execute();
