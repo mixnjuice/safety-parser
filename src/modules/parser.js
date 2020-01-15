@@ -26,7 +26,7 @@ export const mergeResults = async results => {
     const dbCategory = await querySingle(getCategoryByName(category));
 
     if (!dbCategory) {
-      log.info(`Did not find ingredient category ${category}`);
+      log.warn(`Did not find ingredient category ${category}`);
       continue;
     }
 
@@ -35,7 +35,7 @@ export const mergeResults = async results => {
     let flavorId;
 
     if (!Array.isArray(dbFlavors) || dbFlavors.length === 0) {
-      log.info(`Did not find ${vendor} ${flavor}`);
+      log.warn(`Did not find ${vendor} ${flavor}`);
       continue;
     } else if (dbFlavors.length > 1) {
       const chosen = await inquirer.prompt([
@@ -62,7 +62,7 @@ export const mergeResults = async results => {
     );
 
     if (!dbIngredient) {
-      log.info(`Did not find ingredient ${ingredient}`);
+      log.warn(`Did not find ingredient ${ingredient}`);
       continue;
     }
 
