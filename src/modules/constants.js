@@ -31,9 +31,9 @@ export const vendorRegexes = {
 };
 
 export const categories = {
-  avoid: 'avoid',
-  caution: 'caution',
-  research: 'research'
+  avoid: 'Avoid',
+  caution: 'Caution',
+  research: 'Research'
 };
 
 const { avoid, caution, research } = categories;
