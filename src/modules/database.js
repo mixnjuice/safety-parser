@@ -27,15 +27,21 @@ export const queryMultiple = async query => {
   return results;
 };
 
-export const findFlavor = (flavorName, vendorCode) =>
-  client('flavor as f')
+export const findFlavor = (flavorName, vendorCode) => {
+  const flavorTokens = flavorName.toLowerCase().replace(/\s+/g, ' & ');
+
+  return client('flavor as f')
     .innerJoin('vendor as v', 'f.vendor_id', 'v.id')
-    .select('id', 'name', 'slug', 'density')
     .select({
-      vendorId: 'v.id'
+      id: 'f.id',
+      name: 'f.name',
+      slug: 'f.slug',
+      vendorId: 'v.id',
+      vendorCode: 'v.code'
     })
-    .where('f.name', 'like', `%${flavorName}%`)
+    .where(client.raw(`to_tsvector(f.name) @@ to_tsquery('${flavorTokens}')`))
     .where('v.code', vendorCode);
+};
 
 export const getIngredients = () =>
   client('ingredient')
@@ -45,7 +51,8 @@ export const getIngredients = () =>
       ingredientCategoryId: 'ingredient_category_id'
     });
 
-export const getIngredient = id => getIngredients().where('id', id);
+export const getIngredientByCasNumber = casNumber =>
+  getIngredients().where('cas_number', casNumber);
 
 export const getCategories = () =>
   client('ingredient_category').select([
@@ -55,7 +62,12 @@ export const getCategories = () =>
     'description'
   ]);
 
-export const getCategory = id => getCategories().where('id', id);
+export const getCategoryByName = name => getCategories().where('name', name);
+
+export const getVendors = () =>
+  client('vendor').select(['id', 'name', 'slug', 'code']);
+
+export const getVendorByCode = code => getVendors().where('code', code);
 
 export const getFlavorIngredients = () =>
   client('flavors_ingredients').select({
