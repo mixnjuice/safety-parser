@@ -17,6 +17,68 @@ import { getLogger } from 'modules/logging';
 
 const log = getLogger('parser');
 
+export const mergeResults = async results => {
+  log.info(`Merging ${results.length} new findings...`);
+
+  for (const result of results) {
+    const { category, vendor, flavor, ingredient } = result;
+
+    const dbCategory = await querySingle(getCategoryByName(category));
+
+    if (!dbCategory) {
+      log.info(`Did not find ingredient category ${category}`);
+      continue;
+    }
+
+    const dbFlavors = await queryMultiple(findFlavor(flavor, vendor));
+
+    let flavorId;
+
+    if (!Array.isArray(dbFlavors) || dbFlavors.length === 0) {
+      log.info(`Did not find ${vendor} ${flavor}`);
+      continue;
+    } else if (dbFlavors.length > 1) {
+      const chosen = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'flavorId',
+          message: `Multiple flavors found for ${vendor} ${flavor}`,
+          choices: dbFlavors.map(dbFlavor => ({
+            name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
+            value: dbFlavor.id
+          }))
+        }
+      ]);
+
+      flavorId = chosen.flavorId;
+    } else {
+      flavorId = dbFlavors[0].id;
+    }
+
+    log.info(`Matched ${flavor} to flavor ${flavorId}`);
+
+    const dbIngredient = await querySingle(
+      getIngredientByCasNumber(ingredient)
+    );
+
+    if (!dbIngredient) {
+      log.info(`Did not find ingredient ${ingredient}`);
+      continue;
+    }
+
+    const flavorIngredient = await querySingle(
+      getFlavorIngredient(flavorId, dbIngredient.id)
+    );
+
+    if (flavorIngredient) {
+      log.info('Found existing flavors_ingredients');
+      continue;
+    }
+
+    await insertFlavorIngredient(flavorId, dbIngredient.id);
+  }
+};
+
 const parseFile = (dir, file, fileRegex, data, results) => {
   if (!data.text) {
     return;
@@ -116,7 +178,7 @@ const parseFile = (dir, file, fileRegex, data, results) => {
     const hasIngredient = trimmedText.indexOf(cas) > -1;
 
     if (hasIngredient) {
-      log.debug(`${dir} ${flavorName} has ${name}!`);
+      log.info(`${dir} ${flavorName} has ${name}!`);
       results.push({
         category,
         vendor: dir,
@@ -127,9 +189,10 @@ const parseFile = (dir, file, fileRegex, data, results) => {
   }
 };
 
-const parseDirectory = async (vendor, results) => {
+const parseDirectory = async vendor => {
   const fileRegex = vendorRegexes[vendor];
   const files = await globby(`./data/${vendor}/**/*.pdf`);
+  const results = [];
   const tasks = [];
 
   log.info(`Parsing directory ${vendor}`);
@@ -151,74 +214,12 @@ const parseDirectory = async (vendor, results) => {
 
   await Promise.all(tasks);
   tasks.length = 0;
-};
 
-export const mergeResults = async results => {
-  for (const result of results) {
-    const { category, vendor, flavor, ingredient } = result;
-
-    const dbCategory = await querySingle(getCategoryByName(category));
-
-    if (!dbCategory) {
-      log.info(`did not find ingredient category ${category}`);
-      continue;
-    }
-
-    const dbFlavors = await queryMultiple(findFlavor(flavor, vendor));
-
-    let flavorId;
-
-    if (!Array.isArray(dbFlavors) || dbFlavors.length === 0) {
-      log.info(`Did not find flavor ${flavor}`);
-      continue;
-    } else if (dbFlavors.length > 1) {
-      const chosen = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'flavorId',
-          message: `Multiple flavors found for ${vendor} ${flavor}`,
-          choices: dbFlavors.map(dbFlavor => ({
-            name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
-            value: dbFlavor.id
-          }))
-        }
-      ]);
-
-      flavorId = chosen.flavorId;
-    } else {
-      flavorId = dbFlavors[0].id;
-    }
-
-    log.info(`Matched ${flavor} to flavor ${flavorId}`);
-
-    const dbIngredient = await querySingle(
-      getIngredientByCasNumber(ingredient)
-    );
-
-    if (!dbIngredient) {
-      log.info(`Did not find ingredient ${ingredient}`);
-      continue;
-    }
-
-    const flavorIngredient = await querySingle(
-      getFlavorIngredient(flavorId, dbIngredient.id)
-    );
-
-    if (flavorIngredient) {
-      log.info('Found existing flavors_ingredients');
-      continue;
-    }
-
-    await insertFlavorIngredient(flavorId, dbIngredient.id);
-  }
+  await mergeResults(results);
 };
 
 export const parseAllDirectories = async () => {
-  const results = [];
-
   for (const vendor of vendorKeys) {
-    await parseDirectory(vendor, results);
+    await parseDirectory(vendor);
   }
-
-  await mergeResults(results);
 };
