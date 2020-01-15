@@ -93,4 +93,4 @@ export const insertFlavorIngredient = (flavorId, ingredientId) =>
     updated: client.fn.now()
   });
 
-export const closeDatabase = client.close;
+export const closeDatabase = client.destroy;
