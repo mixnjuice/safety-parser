@@ -28,7 +28,11 @@ export const queryMultiple = async query => {
 };
 
 export const findFlavor = (flavorName, vendorCode) => {
-  const flavorTokens = flavorName.toLowerCase().replace(/\s+/g, ' & ');
+  const flavorTokens = flavorName
+    .toLowerCase()
+    .replace(/[\\(\\)]/g, '')
+    .replace(' & ', '')
+    .replace(/\s+/g, ' & ');
 
   return client('flavor as f')
     .innerJoin('vendor as v', 'f.vendor_id', 'v.id')
