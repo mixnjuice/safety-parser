@@ -15,7 +15,7 @@ export const vendorKeys = [
 ];
 
 export const vendorRegexes = {
-  FW: /([\w\d\s'&\\(\\)]+) Flavor(\s.*).pdf$/,
+  FW: /(FW-([A-Z0-9]+))?\s*([\w\d\s'&\\(\\)-]+?)\s+FW-(?:[A-Z0-9]+)\.pdf$/i,
   RF: /([\w\d\s]+)[_,] Super Concentrate/,
   CAP: /[\w\s]+_([\w\d\s]*)_SDS[-_]US.*/,
   FLV: /([\w\d-]+)(?!-Flavor)-MSDS/i,
