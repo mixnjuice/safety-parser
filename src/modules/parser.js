@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import pdfParse from 'pdf-parse';
 import { titleCase } from 'title-case';
 
-import { ingredients, vendorKeys, vendorRegexes } from 'modules/constants';
+import { vendorKeys, vendorRegexes } from 'modules/constants';
 import {
   findFlavor,
   querySingle,
@@ -11,7 +11,8 @@ import {
   getIngredientByCasNumber,
   insertFlavorIngredient,
   getFlavorIngredient,
-  queryMultiple
+  queryMultiple,
+  getIngredients
 } from 'modules/database';
 import { getLogger } from 'modules/logging';
 
@@ -21,7 +22,7 @@ export const mergeResults = async results => {
   log.info(`Merging ${results.length} new findings...`);
 
   for (const result of results) {
-    const { category, vendor, flavor, ingredient } = result;
+    const { category, vendor, flavor, casNumber } = result;
 
     const dbCategory = await querySingle(getCategoryByName(category));
 
@@ -57,12 +58,10 @@ export const mergeResults = async results => {
 
     log.info(`Matched ${flavor} to flavor ${flavorId}`);
 
-    const dbIngredient = await querySingle(
-      getIngredientByCasNumber(ingredient)
-    );
+    const dbIngredient = await querySingle(getIngredientByCasNumber(casNumber));
 
     if (!dbIngredient) {
-      log.warn(`Did not find ingredient ${ingredient}`);
+      log.warn(`Did not find ingredient ${casNumber}`);
       continue;
     }
 
@@ -79,7 +78,7 @@ export const mergeResults = async results => {
   }
 };
 
-const parseFile = (dir, file, fileRegex, data, results) => {
+const parseFile = (dir, file, fileRegex, data, results, ingredients) => {
   if (!data.text) {
     return;
   }
@@ -177,24 +176,24 @@ const parseFile = (dir, file, fileRegex, data, results) => {
   }
 
   log.debug(`Parsed ${file} as ${flavorName}`);
-  for (const [cas, info] of Object.entries(ingredients)) {
-    const { category, name } = info;
+  for (const ingredient of ingredients) {
+    const { category, casNumber, name } = ingredient;
     const trimmedText = text.replace(/[\r\n]/, '').toLowerCase();
-    const hasIngredient = trimmedText.indexOf(cas) > -1;
+    const hasIngredient = trimmedText.indexOf(casNumber) > -1;
 
     if (hasIngredient) {
       log.info(`${dir} ${flavorName} has ${name}!`);
       results.push({
         category,
+        casNumber,
         vendor: dir,
-        flavor: flavorName,
-        ingredient: cas
+        flavor: flavorName
       });
     }
   }
 };
 
-const parseDirectory = async vendor => {
+const parseDirectory = async (vendor, ingredients) => {
   const fileRegex = vendorRegexes[vendor];
   const files = await globby(`./data/${vendor}/**/*.pdf`);
   const results = [];
@@ -207,7 +206,9 @@ const parseDirectory = async vendor => {
     log.debug(`Scanning ${file}`);
     tasks.push(
       pdfParse(file)
-        .then(text => parseFile(vendor, file, fileRegex, text, results))
+        .then(text =>
+          parseFile(vendor, file, fileRegex, text, results, ingredients)
+        )
         .catch(error => log.error(error.message))
     );
 
@@ -224,7 +225,9 @@ const parseDirectory = async vendor => {
 };
 
 export const parseAllDirectories = async () => {
-  for (const vendor of vendorKeys) {
-    await parseDirectory(vendor);
+  const ingredients = await queryMultiple(getIngredients());
+
+  for (const vendor of vendorKeys.filter(vend => vend === 'NR')) {
+    await parseDirectory(vendor, ingredients);
   }
 };

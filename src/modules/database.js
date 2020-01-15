@@ -48,11 +48,16 @@ export const findFlavor = (flavorName, vendorCode) => {
 };
 
 export const getIngredients = () =>
-  client('ingredient')
-    .select(['id', 'name', 'notes', 'created', 'updated'])
+  client('ingredient as i')
+    .innerJoin('ingredient_category as ic', 'i.ingredient_category_id', 'ic.id')
     .select({
-      casNumber: 'cas_number',
-      ingredientCategoryId: 'ingredient_category_id'
+      id: 'i.id',
+      name: 'i.name',
+      notes: 'i.notes',
+      created: 'i.created',
+      updated: 'i.updated',
+      casNumber: 'i.cas_number',
+      category: 'ic.name'
     });
 
 export const getIngredientByCasNumber = casNumber =>
