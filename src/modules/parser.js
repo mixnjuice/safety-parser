@@ -203,7 +203,7 @@ const parseDirectory = async vendor => {
     tasks.push(
       pdfParse(file)
         .then(text => parseFile(vendor, file, fileRegex, text, results))
-        .catch(error => log.error(error))
+        .catch(error => log.error(error.message))
     );
 
     if (tasks.length === 100) {
