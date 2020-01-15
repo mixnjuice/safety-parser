@@ -149,8 +149,13 @@ const parseFile = (dir, file, fileRegex, data, results) => {
   } else if (dir === 'FW') {
     const flavorMatches = file.match(fileRegex);
 
-    if (flavorMatches) {
-      flavorName = `${flavorMatches[1]}${flavorMatches[2]}`;
+    if (flavorMatches && flavorMatches.length > 3) {
+      flavorName = flavorMatches[3]
+        .replace(/(Flavor|N&A|Artificial|Type)/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+    } else {
+      log.warn(`Unable to parse FW flavor name from ${file}`);
     }
   } else {
     const flavorMatches = file.match(fileRegex);
