@@ -80,3 +80,5 @@ export const insertFlavorIngredient = (flavorId, ingredientId) =>
     created: client.fn.now(),
     updated: client.fn.now()
   });
+
+export const closeDatabase = client.close;
