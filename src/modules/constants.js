@@ -27,5 +27,5 @@ export const vendorRegexes = {
   FA: /FA[0-9]+_(.*)_.*\.pdf/,
   FM: /[0-9]+\s(.*)\sflavour.*/i,
   HS: /[0-9]+\s(.*)\.pdf/,
-  NR: /(\w\d\s)+\s—\sNicRiv SDS\.pdf/
+  NR: /([\w\d\s]+)\s—\sNicRiv SDS\.pdf/
 };
