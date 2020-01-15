@@ -1,24 +1,21 @@
 import globby from 'globby';
+import inquirer from 'inquirer';
 import pdfParse from 'pdf-parse';
 import { titleCase } from 'title-case';
 
+import { ingredients, vendorKeys, vendorRegexes } from 'modules/constants';
 import {
-  categories,
-  ingredients,
-  vendorKeys,
-  vendorRegexes
-} from 'modules/constants';
+  findFlavor,
+  querySingle,
+  getCategoryByName,
+  getIngredientByCasNumber,
+  insertFlavorIngredient,
+  getFlavorIngredient,
+  queryMultiple
+} from 'modules/database';
 import { getLogger } from 'modules/logging';
 
 const log = getLogger('parser');
-
-const printAll = array => {
-  array.sort();
-
-  for (const item of array) {
-    log.info(item);
-  }
-};
 
 const parseFile = (dir, file, fileRegex, data, results) => {
   if (!data.text) {
@@ -50,6 +47,7 @@ const parseFile = (dir, file, fileRegex, data, results) => {
           /Artificial|N&A|Nat & Art|Natural & Artificial|Flavor|Wonf($|\s)|Fl($|\s)|Nat($|\s)|Art($|\s)|Type($|\s)/gi,
           ''
         )
+        .replace(/\s{2,}/g, ' ')
         .toLowerCase()
         .trim()
     );
@@ -119,7 +117,12 @@ const parseFile = (dir, file, fileRegex, data, results) => {
 
     if (hasIngredient) {
       log.debug(`${dir} ${flavorName} has ${name}!`);
-      results[category].push(`${dir},${flavorName},${name}`);
+      results.push({
+        category,
+        vendor: dir,
+        flavor: flavorName,
+        ingredient: cas
+      });
     }
   }
 };
@@ -150,21 +153,72 @@ const parseDirectory = async (vendor, results) => {
   tasks.length = 0;
 };
 
-export const parseAllDirectories = async () => {
-  const results = Object.fromEntries(
-    Object.entries(categories).map(([key]) => [key, []])
-  );
+export const mergeResults = async results => {
+  for (const result of results) {
+    const { category, vendor, flavor, ingredient } = result;
 
-  for (const vendor of vendorKeys.filter(key => key === 'CAP')) {
+    const dbCategory = await querySingle(getCategoryByName(category));
+
+    if (!dbCategory) {
+      log.info(`did not find ingredient category ${category}`);
+      continue;
+    }
+
+    const dbFlavors = await queryMultiple(findFlavor(flavor, vendor));
+
+    let flavorId;
+
+    if (!Array.isArray(dbFlavors) || dbFlavors.length === 0) {
+      log.info(`Did not find flavor ${flavor}`);
+      continue;
+    } else if (dbFlavors.length > 1) {
+      const chosen = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'flavorId',
+          message: `Multiple flavors found for ${vendor} ${flavor}`,
+          choices: dbFlavors.map(dbFlavor => ({
+            name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
+            value: dbFlavor.id
+          }))
+        }
+      ]);
+
+      flavorId = chosen.flavorId;
+    } else {
+      flavorId = dbFlavors[0].id;
+    }
+
+    log.info(`Matched ${flavor} to flavor ${flavorId}`);
+
+    const dbIngredient = await querySingle(
+      getIngredientByCasNumber(ingredient)
+    );
+
+    if (!dbIngredient) {
+      log.info(`Did not find ingredient ${ingredient}`);
+      continue;
+    }
+
+    const flavorIngredient = await querySingle(
+      getFlavorIngredient(flavorId, dbIngredient.id)
+    );
+
+    if (flavorIngredient) {
+      log.info('Found existing flavors_ingredients');
+      continue;
+    }
+
+    await insertFlavorIngredient(flavorId, dbIngredient.id);
+  }
+};
+
+export const parseAllDirectories = async () => {
+  const results = [];
+
+  for (const vendor of vendorKeys) {
     await parseDirectory(vendor, results);
   }
 
-  const { avoid, caution, research } = results;
-
-  log.info('AVOID FLAVORS');
-  printAll(avoid);
-  log.info('CAUTION FLAVORS');
-  printAll(caution);
-  log.info('RESEARCH FLAVORS');
-  printAll(research);
+  await mergeResults(results);
 };
