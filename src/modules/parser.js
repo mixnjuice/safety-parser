@@ -77,12 +77,23 @@ export const mergeResults = async results => {
           type: 'list',
           name: 'flavorId',
           message: `Multiple flavors found for ${vendor} ${flavor}`,
-          choices: dbFlavors.map(dbFlavor => ({
-            name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
-            value: dbFlavor.id
-          }))
+          choices: [
+            ...dbFlavors.map(dbFlavor => ({
+              name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
+              value: dbFlavor.id
+            })),
+            {
+              name: 'None of these',
+              value: null
+            }
+          ]
         }
       ]);
+
+      if (chosen.flavorId === null) {
+        log.warn(`Skipping ${vendor} ${flavor}!`);
+        continue;
+      }
 
       flavorId = chosen.flavorId;
     } else {
