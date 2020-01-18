@@ -102,4 +102,17 @@ export const insertFlavorIngredient = (flavorId, ingredientId) =>
     updated: client.fn.now()
   });
 
+export const getIdentifiers = (vendorCode, flavorName, ingredientName) =>
+  client('flavor as f')
+    .select({
+      flavorId: 'f.id',
+      ingredientId: 'i.id'
+    })
+    .innerJoin('vendor as v', 'f.vendor_id', 'v.id')
+    .join('ingredient as i', 'i.name', client.raw(`'${ingredientName}'`))
+    .where({
+      'v.code': vendorCode,
+      'f.name': flavorName
+    });
+
 export const closeDatabase = () => client.destroy();

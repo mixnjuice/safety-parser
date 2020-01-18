@@ -1,22 +1,55 @@
 import globby from 'globby';
+import neatCsv from 'neat-csv';
+import { resolve } from 'path';
 import inquirer from 'inquirer';
 import pdfParse from 'pdf-parse';
+import getStream from 'get-stream';
+import { createReadStream } from 'fs';
 import { titleCase } from 'title-case';
 
 import { vendorKeys, vendorRegexes } from 'modules/constants';
 import {
   findFlavor,
-  querySingle,
   getCategoryByName,
-  getIngredientByCasNumber,
-  insertFlavorIngredient,
   getFlavorIngredient,
+  getIdentifiers,
+  getIngredientByCasNumber,
+  getIngredients,
+  insertFlavorIngredient,
   queryMultiple,
-  getIngredients
+  querySingle
 } from 'modules/database';
 import { getLogger } from 'modules/logging';
 
 const log = getLogger('parser');
+
+export const readManualWarnings = async () => {
+  const stream = await createReadStream(
+    resolve(__dirname, '../../data/manual.csv')
+  );
+  const data = await getStream(stream);
+
+  return await neatCsv(data);
+};
+
+export const parseManualWarnings = async () => {
+  const warnings = await readManualWarnings();
+
+  for (const warning of warnings) {
+    const { vendor, flavor, ingredient } = warning;
+    const identifiers = await querySingle(
+      getIdentifiers(vendor, flavor, ingredient)
+    );
+
+    if (!identifiers) {
+      continue;
+    }
+
+    const { flavorId, ingredientId } = identifiers;
+
+    await insertFlavorIngredient(flavorId, ingredientId);
+  }
+};
 
 export const mergeResults = async results => {
   log.info(`Merging ${results.length} new findings...`);
@@ -230,4 +263,6 @@ export const parseAllDirectories = async () => {
   for (const vendor of vendorKeys.filter(vend => vend === 'NR')) {
     await parseDirectory(vendor, ingredients);
   }
+
+  await parseManualWarnings();
 };
