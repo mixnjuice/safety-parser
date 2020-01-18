@@ -260,7 +260,7 @@ const parseDirectory = async (vendor, ingredients) => {
 export const parseAllDirectories = async () => {
   const ingredients = await queryMultiple(getIngredients());
 
-  for (const vendor of vendorKeys.filter(vend => vend === 'NR')) {
+  for (const vendor of vendorKeys) {
     await parseDirectory(vendor, ingredients);
   }
 
