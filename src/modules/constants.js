@@ -22,7 +22,7 @@ export const vendorRegexes = {
   WF: /^Natural and Artificial ([\w\d\s]+) Flavour Liquid\.pdf$/,
   TPA: null,
   MB: /\/([\w\d\s!-]+)\.pdf/,
-  INW: /[0-9]{4}\s(.*)\.pdf/,
+  INW: /(concentrate )?([\w\d\s]+)(\([0-9]\))?\.pdf/i,
   VTA: /SDS-VTA-(.*)\.pdf/,
   FA: /FA[0-9]+_(.*)_.*\.pdf/,
   FM: /[0-9]+\s(.*)\sflavour.*/i,
