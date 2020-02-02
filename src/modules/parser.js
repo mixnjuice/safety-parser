@@ -47,6 +47,15 @@ export const parseManualWarnings = async () => {
 
     const { flavorId, ingredientId } = identifiers;
 
+    const flavorIngredient = await querySingle(
+      getFlavorIngredient(flavorId, ingredientId)
+    );
+
+    if (flavorIngredient) {
+      log.info('Found existing flavors_ingredients');
+      return;
+    }
+
     await insertFlavorIngredient(flavorId, ingredientId);
   }
 };
