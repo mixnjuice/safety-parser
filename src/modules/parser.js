@@ -1,11 +1,12 @@
 import globby from 'globby';
+import mkdirp from 'mkdirp';
 import neatCsv from 'neat-csv';
-import { resolve } from 'path';
 import inquirer from 'inquirer';
 import pdfParse from 'pdf-parse';
 import getStream from 'get-stream';
-import { createReadStream } from 'fs';
 import { titleCase } from 'title-case';
+import { dirname, resolve } from 'path';
+import { createReadStream, copyFileSync, existsSync } from 'fs';
 
 import { vendorKeys, vendorRegexes } from 'modules/constants';
 import {
@@ -229,6 +230,18 @@ const parseFile = (dir, file, fileRegex, data, results, ingredients) => {
   }
 
   log.debug(`Parsed ${file} as ${flavorName}`);
+
+  const flavorSlug = `${dir}-${flavorName.replace(/[^\w\d\s]/g, '')}`
+    .replace(/\s+/g, '-')
+    .toLowerCase();
+  const newFile = `./data-new/${dir}/${flavorSlug}.pdf`;
+
+  if (!existsSync(newFile)) {
+    mkdirp.sync(dirname(newFile));
+    copyFileSync(file, newFile);
+    log.info(`Copied ${file} to ${newFile}`);
+  }
+
   for (const ingredient of ingredients) {
     const { category, casNumber, name } = ingredient;
     const trimmedText = text.replace(/[\r\n]/, '').toLowerCase();
