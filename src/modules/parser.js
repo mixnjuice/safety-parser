@@ -243,7 +243,7 @@ const parseFile = (dir, file, fileRegex, data, results, ingredients) => {
         .trim()
     );
   } else if (dir === 'INW') {
-    flavorName = flavorName.replace('Conc.', '').trim();
+    flavorName = flavorName.replace(/(Conc.|Concentrate)/i, '').trim();
   }
 
   log.debug(`Parsed ${file} as ${flavorName}`);
