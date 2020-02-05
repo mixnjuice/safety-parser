@@ -7,6 +7,7 @@ import getStream from 'get-stream';
 import { titleCase } from 'title-case';
 import { dirname, resolve } from 'path';
 import { createReadStream, copyFileSync, existsSync } from 'fs';
+import { compareTwoStrings } from 'string-similarity';
 
 import { vendorKeys, vendorRegexes } from 'modules/constants';
 import {
@@ -82,16 +83,32 @@ export const mergeResults = async results => {
       log.warn(`Did not find ${vendor} ${flavor}`);
       continue;
     } else if (dbFlavors.length > 1) {
+      const choices = [
+        ...dbFlavors.map(dbFlavor => ({
+          name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
+          value: dbFlavor.id
+        }))
+      ];
+      const name = `${vendor} ${flavor}`;
+
+      choices.sort((a, b) => {
+        const aValue = compareTwoStrings(name, a.name);
+        const bValue = compareTwoStrings(name, b.name);
+
+        if (aValue === bValue) {
+          return 0;
+        }
+
+        return aValue > bValue ? -1 : 1;
+      });
+
       const chosen = await inquirer.prompt([
         {
           type: 'list',
           name: 'flavorId',
           message: `Multiple flavors found for ${vendor} ${flavor}`,
           choices: [
-            ...dbFlavors.map(dbFlavor => ({
-              name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
-              value: dbFlavor.id
-            })),
+            ...choices,
             {
               name: 'None of these',
               value: null
