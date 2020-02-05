@@ -19,7 +19,7 @@ export const vendorRegexes = {
   RF: /([\w\d\s]+)[_,] Super Concentrate/,
   CAP: /[\w\s]+_([\w\d\s]*)_SDS[-_]US.*/,
   FLV: /([\w\d-]+)(?!-Flavor)-MSDS/i,
-  WF: /^Natural and Artificial ([\w\d\s]+) Flavour Liquid\.pdf$/,
+  WF: /Natural.*Artificial[\s-]([\w\d\s-()]+)[\s-]Flavour[\s-]Liquid.*\.pdf$/,
   TPA: null,
   MB: /\/([\w\d\s!-]+)\.pdf/,
   INW: /([\w\d\s]+)(\([0-9]\))?\.pdf/,
