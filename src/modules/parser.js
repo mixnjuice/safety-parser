@@ -54,8 +54,10 @@ export const parseManualWarnings = async () => {
     );
 
     if (flavorIngredient) {
-      log.info('Found existing flavors_ingredients');
-      return;
+      log.info(`Found existing flavors_ingredients for ${vendor} ${flavor}`);
+      continue;
+    } else {
+      log.info(`Manually merging ${vendor} ${flavor} with ${ingredient}`);
     }
 
     await insertFlavorIngredient(flavorId, ingredientId);
