@@ -90,39 +90,45 @@ export const mergeResults = async results => {
         }))
       ];
       const name = `${vendor} ${flavor}`;
+      const exactMatch = choices.find(choice => choice.name === name);
 
-      choices.sort((a, b) => {
-        const aValue = compareTwoStrings(name, a.name);
-        const bValue = compareTwoStrings(name, b.name);
+      if (exactMatch) {
+        flavorId = exactMatch.value;
+        log.info(`Matched ${name} to ${flavorId}`);
+      } else {
+        choices.sort((a, b) => {
+          const aValue = compareTwoStrings(name, a.name);
+          const bValue = compareTwoStrings(name, b.name);
 
-        if (aValue === bValue) {
-          return 0;
+          if (aValue === bValue) {
+            return 0;
+          }
+
+          return aValue > bValue ? -1 : 1;
+        });
+
+        const chosen = await inquirer.prompt([
+          {
+            type: 'list',
+            name: 'flavorId',
+            message: `Multiple flavors found for ${vendor} ${flavor}`,
+            choices: [
+              ...choices,
+              {
+                name: 'None of these',
+                value: null
+              }
+            ]
+          }
+        ]);
+
+        if (chosen.flavorId === null) {
+          log.warn(`Skipping ${vendor} ${flavor}!`);
+          continue;
         }
 
-        return aValue > bValue ? -1 : 1;
-      });
-
-      const chosen = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'flavorId',
-          message: `Multiple flavors found for ${vendor} ${flavor}`,
-          choices: [
-            ...choices,
-            {
-              name: 'None of these',
-              value: null
-            }
-          ]
-        }
-      ]);
-
-      if (chosen.flavorId === null) {
-        log.warn(`Skipping ${vendor} ${flavor}!`);
-        continue;
+        flavorId = chosen.flavorId;
       }
-
-      flavorId = chosen.flavorId;
     } else {
       flavorId = dbFlavors[0].id;
     }
