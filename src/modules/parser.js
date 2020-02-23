@@ -44,6 +44,9 @@ export const parseManualWarnings = async () => {
     );
 
     if (!identifiers) {
+      log.warn(
+        `Skipping manual entry ${vendor} ${flavor} because it is not in the database!`
+      );
       continue;
     }
 
