@@ -67,7 +67,7 @@ export const parseManualWarnings = async () => {
   }
 };
 
-export const mergeResults = async results => {
+export const mergeResults = async (results) => {
   log.info(`Merging ${results.length} new findings...`);
 
   for (const result of results) {
@@ -89,13 +89,13 @@ export const mergeResults = async results => {
       continue;
     } else if (dbFlavors.length > 1) {
       const choices = [
-        ...dbFlavors.map(dbFlavor => ({
+        ...dbFlavors.map((dbFlavor) => ({
           name: `${dbFlavor.vendorCode} ${dbFlavor.name}`,
           value: dbFlavor.id
         }))
       ];
       const name = `${vendor} ${flavor}`;
-      const exactMatch = choices.find(choice => choice.name === name);
+      const exactMatch = choices.find((choice) => choice.name === name);
 
       if (exactMatch) {
         flavorId = exactMatch.value;
@@ -248,10 +248,7 @@ const parseFile = (dir, file, fileRegex, data, results, ingredients) => {
 
   if (dir === 'FLV' || dir === 'MB' || dir === 'VTA') {
     flavorName = titleCase(
-      flavorName
-        .replace(/[-_]+/g, ' ')
-        .toLowerCase()
-        .trim()
+      flavorName.replace(/[-_]+/g, ' ').toLowerCase().trim()
     );
   } else if (dir === 'INW') {
     flavorName = flavorName.replace(/(Conc.|Concentrate)/i, '').trim();
@@ -302,10 +299,10 @@ const parseDirectory = async (vendor, ingredients) => {
     log.debug(`Scanning ${file}`);
     tasks.push(
       pdfParse(file)
-        .then(text =>
+        .then((text) =>
           parseFile(vendor, file, fileRegex, text, results, ingredients)
         )
-        .catch(error => log.error(error.message))
+        .catch((error) => log.error(error.message))
     );
 
     if (tasks.length === 100) {

@@ -7,7 +7,7 @@ const client = knex({
   connection: config
 });
 
-export const querySingle = async query => {
+export const querySingle = async (query) => {
   const results = await query;
 
   if (!Array.isArray(results) || results.length === 0) {
@@ -17,7 +17,7 @@ export const querySingle = async query => {
   return results[0];
 };
 
-export const queryMultiple = async query => {
+export const queryMultiple = async (query) => {
   const results = await query;
 
   if (!Array.isArray(results)) {
@@ -60,7 +60,7 @@ export const getIngredients = () =>
       category: 'ic.name'
     });
 
-export const getIngredientByCasNumber = casNumber =>
+export const getIngredientByCasNumber = (casNumber) =>
   getIngredients().where('cas_number', casNumber);
 
 export const getCategories = () =>
@@ -71,12 +71,12 @@ export const getCategories = () =>
     'description'
   ]);
 
-export const getCategoryByName = name => getCategories().where('name', name);
+export const getCategoryByName = (name) => getCategories().where('name', name);
 
 export const getVendors = () =>
   client('vendor').select(['id', 'name', 'slug', 'code']);
 
-export const getVendorByCode = code => getVendors().where('code', code);
+export const getVendorByCode = (code) => getVendors().where('code', code);
 
 export const getFlavorIngredients = () =>
   client('flavors_ingredients').select({
