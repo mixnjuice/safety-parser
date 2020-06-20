@@ -32,7 +32,8 @@ export const findFlavor = (flavorName, vendorCode) => {
     .toLowerCase()
     .replace(/[\\(\\)]/g, '')
     .replace(' & ', '')
-    .replace(/\s+/g, ' & ');
+    .replace(/\s+/g, ' & ')
+    .replace(/'/g, "''");
 
   return client('flavor as f')
     .innerJoin('vendor as v', 'f.vendor_id', 'v.id')
