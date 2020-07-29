@@ -93,15 +93,38 @@ export const getFlavorIngredient = (flavorId, ingredientId) =>
     /* eslint-enable camelcase */
   });
 
-export const insertFlavorIngredient = (flavorId, ingredientId) =>
+export const insertFlavorIngredient = (
+  flavorId,
+  ingredientId,
+  isManual,
+  sourceUrl
+) =>
   client('flavors_ingredients').insert({
     /* eslint-disable camelcase */
     flavor_id: flavorId,
     ingredient_id: ingredientId,
+    source_url: sourceUrl,
+    source_manual: Boolean(isManual),
     /* eslint-enable camelcase */
     created: client.fn.now(),
     updated: client.fn.now()
   });
+
+export const updateFlavorIngredient = (
+  flavorId,
+  ingredientId,
+  isManual,
+  sourceUrl
+) =>
+  client('flavors_ingredients')
+    .update({
+      /* eslint-disable camelcase */
+      source_url: sourceUrl,
+      source_manual: Boolean(isManual)
+      /* eslint-enable camelcase */
+    })
+    .where('flavor_id', flavorId)
+    .where('ingredient_id', ingredientId);
 
 export const getIdentifiers = (vendorCode, flavorName, ingredientName) =>
   client('flavor as f')

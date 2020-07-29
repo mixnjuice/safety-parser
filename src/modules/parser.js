@@ -19,7 +19,8 @@ import {
   getIngredients,
   insertFlavorIngredient,
   queryMultiple,
-  querySingle
+  querySingle,
+  updateFlavorIngredient
 } from 'modules/database';
 import { getLogger } from 'modules/logging';
 
@@ -58,12 +59,13 @@ export const parseManualWarnings = async () => {
 
     if (flavorIngredient) {
       log.info(`Found existing flavors_ingredients for ${vendor} ${flavor}`);
+      await updateFlavorIngredient(flavorId, ingredientId, true, null);
       continue;
     } else {
       log.info(`Manually merging ${vendor} ${flavor} with ${ingredient}`);
     }
 
-    await insertFlavorIngredient(flavorId, ingredientId);
+    await insertFlavorIngredient(flavorId, ingredientId, true, null);
   }
 };
 
@@ -71,7 +73,7 @@ export const mergeResults = async (results) => {
   log.info(`Merging ${results.length} new findings...`);
 
   for (const result of results) {
-    const { category, vendor, flavor, casNumber } = result;
+    const { category, vendor, flavor, casNumber, file } = result;
 
     const dbCategory = await querySingle(getCategoryByName(category));
 
@@ -153,10 +155,11 @@ export const mergeResults = async (results) => {
 
     if (flavorIngredient) {
       log.info('Found existing flavors_ingredients');
+      await updateFlavorIngredient(flavorId, dbIngredient.id, false, file);
       continue;
     }
 
-    await insertFlavorIngredient(flavorId, dbIngredient.id);
+    await insertFlavorIngredient(flavorId, dbIngredient.id, false, file);
   }
 };
 
@@ -282,6 +285,7 @@ const parseFile = (dir, file, fileRegex, data, results, ingredients) => {
         category,
         casNumber,
         vendor: dir,
+        file: newFile.replace('./data-new', ''),
         flavor: flavorName
       });
     }
